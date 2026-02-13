@@ -3,10 +3,14 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework import status
+
+from .models import ExternalEvent
+from .serializers import ExternalEventSerializer
 
 @api_view(["GET"])
 def health(request):
-    return Response({"status": "CayiShelter backend online"})
+    return Response({"state": "CayiShelter backend online"})
 
 
 def _session_with_retries() -> requests.Session:
@@ -43,14 +47,14 @@ def external_feed(request):
             category = event["categories"][0]["title"] if event.get("categories") else "Unknown"
             geometry = event.get("geometry", [])
             occurred_at = geometry[0]["date"] if geometry else None
-            status = "ACTIVE" if not event.get("closed") else "CLOSED"
+            state = "ACTIVE" if not event.get("closed") else "CLOSED"
 
             events.append({
                 "external_id": event.get("id"),
                 "title": event.get("title"),
                 "category": category,
                 "occurred_at": occurred_at,
-                "status": status,
+                "status": state,
                 "source": "OMN",
             })
 
@@ -79,3 +83,44 @@ def external_feed(request):
             {"warning": "External feed degraded, serving fallback data", "details": str(e), "items": fallback},
             status=200,
         )
+        
+@api_view(["POST"])
+def save_external_events(request):
+    """
+    Recibe una lista de eventos (tal cual los devuelve /external-feed/)
+    y los guarda en DB. Si ya existen (external_id único), los ignora/actualiza.
+    """
+    if not isinstance(request.data, list):
+        return Response(
+            {"error": "Expected a list of events"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    created = 0
+    updated = 0
+
+    for item in request.data:
+        external_id = item.get("external_id")
+        if not external_id:
+            continue
+
+        obj, was_created = ExternalEvent.objects.update_or_create(
+            external_id=external_id,
+            defaults={
+                "title": item.get("title", ""),
+                "category": item.get("category", ""),
+                "occurred_at": item.get("occurred_at"),
+                "status": item.get("status", ""),
+                "source": item.get("source"),
+            }
+        )
+
+        if was_created:
+            created += 1
+        else:
+            updated += 1
+
+    return Response(
+        {"ok": True, "created": created, "updated": updated},
+        status=status.HTTP_200_OK
+    )
