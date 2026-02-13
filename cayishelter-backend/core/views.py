@@ -4,6 +4,8 @@ from urllib3.util.retry import Retry
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from .models import ExternalEvent
+from .serializers import ExternalEventSerializer
 
 from .models import ExternalEvent
 from .serializers import ExternalEventSerializer
@@ -84,6 +86,21 @@ def external_feed(request):
             status=200,
         )
         
+@api_view(["GET"])
+def list_events(request):
+    qs = ExternalEvent.objects.order_by("-occurred_at", "-created_at")
+    serializer = ExternalEventSerializer(qs, many=True)
+    return Response(serializer.data)
+
+@api_view(["DELETE"])
+def delete_event(request, pk):
+    try:
+        event = Event.objects.get(pk=pk)
+        event.delete()
+        return Response({"ok": True})
+    except Event.DoesNotExist:
+        return Response(status=404)
+
 @api_view(["POST"])
 def save_external_events(request):
     """
