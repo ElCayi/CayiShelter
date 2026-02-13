@@ -8,6 +8,6 @@ urlpatterns = [
     path("api/external-feed/save/", save_external_events),
     path("api/external-feed/", external_feed), 
     path("api/events/", list_events),
-    path("events/<int:pk>/", delete_event),
+    path("api/events/<int:pk>/", delete_event),
 
 ]   
