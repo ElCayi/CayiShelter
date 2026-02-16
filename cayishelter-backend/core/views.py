@@ -4,13 +4,15 @@ from urllib3.util.retry import Retry
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.decorators import api_view, permission_classes
 from .models import ExternalEvent
 from .serializers import ExternalEventSerializer
-
 from .models import ExternalEvent
 from .serializers import ExternalEventSerializer
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def health(request):
     return Response({"state": "CayiShelter backend online"})
 
@@ -30,6 +32,7 @@ def _session_with_retries() -> requests.Session:
 
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def external_feed(request):
     url = "https://eonet.gsfc.nasa.gov/api/v3/events"
 
@@ -95,10 +98,10 @@ def list_events(request):
 @api_view(["DELETE"])
 def delete_event(request, pk):
     try:
-        event = Event.objects.get(pk=pk)
+        event = ExternalEvent.objects.get(pk=pk)
         event.delete()
         return Response({"ok": True})
-    except Event.DoesNotExist:
+    except ExternalEvent.DoesNotExist:
         return Response(status=404)
 
 @api_view(["POST"])

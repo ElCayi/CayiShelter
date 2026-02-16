@@ -72,9 +72,14 @@ const total = events.length;
 const externalCount = events.filter(e => e.origin === "EXTERNAL").length;
 const internalCount = events.filter(e => e.origin === "INTERNAL").length;
 const deleteEvent = async (id: number) => {
-  await api.delete(`/events/${id}/`);
-  setEvents(prev => prev.filter(e => e.id !== id));
+  try {
+    await api.delete(`/events/${id}/`);
+    setEvents((prev) => prev.filter((e) => e.id !== id));
+  } catch (e: any) {
+    setError(e?.message ?? "Failed to delete event");
+  }
 };
+
 
   return (
     <Box>
@@ -121,9 +126,14 @@ const deleteEvent = async (id: number) => {
 
             <TableBody>
               {filteredEvents.map((ev) => (
-                <TableRow key={ev.external_id}>
+                <TableRow key={ev.id}>
                   <TableCell>
-                    <Chip label="EXTERNAL" color="warning" size="small" />
+                    <Chip
+                      label={ev.origin}
+                      color={ev.origin === "EXTERNAL" ? "warning" : "primary"}
+                      size="small"
+                    />
+
                   </TableCell>
                   <TableCell>{ev.external_id}</TableCell>
                   <TableCell>{ev.title}</TableCell>
