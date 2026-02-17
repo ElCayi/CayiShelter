@@ -65,10 +65,72 @@ body::after {
   font-size: 12px;
 }
 
+.terminal {
+  white-space: pre;
+}
+
+.terminal__pre {
+  white-space: pre;
+  font-family: ui-monospace, "IBM Plex Mono", Consolas, monospace;
+}
+
+.plain {
+  color: var(--phosphor);
+}
+
+.title {
+  color: #8fffc0;
+  font-weight: 700;
+}
+
+.meta {
+  color: var(--steel);
+}
+
+.k {
+  color: #72e7ff;
+}
+
+.good {
+  color: #65ff9e;
+}
+
+.warn {
+  color: var(--warning);
+}
+
+.bad {
+  color: var(--critical);
+}
+
+.num {
+  color: #87c6ff;
+}
+
+.ps01 {
+  color: #72e7ff;
+  font-weight: 600;
+}
+
+.prompt {
+  color: #55b8ff;
+}
+
+.cmd {
+  color: var(--phosphor);
+}
+
 .terminal-cursor::after {
   content: "_";
   display: inline-block;
   margin-left: 2px;
+  animation: cursorBlink 1s step-end infinite;
+}
+
+.terminal-block-cursor::after {
+  content: "█";
+  display: inline-block;
+  line-height: 1;
   animation: cursorBlink 1s step-end infinite;
 }
 
