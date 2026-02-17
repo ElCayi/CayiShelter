@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ExternalEvent
+from .models import ExternalEvent, RefugeStatus
 
 
 class ExternalEventSerializer(serializers.ModelSerializer):
@@ -22,4 +22,19 @@ class ExternalEventSerializer(serializers.ModelSerializer):
 
     # 👇 Función que genera el campo
     def get_origin(self, obj):
-        return "EXTERNAL"
+        return "INTERNAL" if (obj.source or "").upper() == "INTERNAL" else "EXTERNAL"
+
+
+class RefugeStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RefugeStatus
+        fields = (
+            "oxygen",
+            "hygiene",
+            "radiation",
+            "radiation_absorption_rate",
+            "biomass_density",
+            "melanin_index",
+            "structural_infiltration_level",
+            "updated_at",
+        )

@@ -5,14 +5,17 @@ export const api = axios.create({
 });
 
 function isPublicEndpoint(url: string) {
+  const normalized = url.startsWith("/") ? url : `/${url}`;
   return (
-    url.includes("/auth/token/") ||
-    url.includes("/auth/password/reset/") ||
-    url.includes("/auth/password/reset/confirm/") ||
-    url.includes("/password/reset/") ||
-    url.includes("/password/reset/confirm/") ||
-    url.includes("/health/") ||
-    url.includes("/external-feed/")
+    normalized.includes("/auth/login/") ||
+    normalized.includes("/auth/token/") ||
+    normalized.includes("/auth/2fa/verify/") ||
+    normalized.includes("/auth/password/reset/") ||
+    normalized.includes("/auth/password/reset/confirm/") ||
+    normalized.includes("/password/reset/") ||
+    normalized.includes("/password/reset/confirm/") ||
+    normalized.includes("/health/") ||
+    normalized === "/external-feed/"
   );
 }
 

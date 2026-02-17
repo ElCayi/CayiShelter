@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../services/api";
+import { useNavigate } from "react-router-dom";
 
 import {
   Alert,
@@ -27,7 +28,9 @@ type ExternalEvent = {
 };
 
 export default function ExternalFeedPage() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [events, setEvents] = useState<ExternalEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,10 +42,11 @@ export default function ExternalFeedPage() {
         setLoading(true);
         setError(null);
 
-        const res = await api.get<ExternalEvent[]>("/external-feed/");
+        const res = await api.get<ExternalEvent[] | { items?: ExternalEvent[]; warning?: string }>("/external-feed/");
 
         if (!mounted) return;
-        setEvents(res.data);
+        const data = Array.isArray(res.data) ? res.data : (res.data.items ?? []);
+        setEvents(data);
       } catch (e: any) {
         if (!mounted) return;
         setError(e?.message ?? "Failed to load external feed");
@@ -60,10 +64,27 @@ export default function ExternalFeedPage() {
 
   const saveToDb = async () => {
     try {
-      const res = await api.post("/external-feed/save/", events);
+      setSaving(true);
+      setError(null);
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        setError("Session expired. Please login again.");
+        navigate("/login", { replace: true });
+        return;
+      }
+      if (events.length === 0) {
+        setError("No external events available to save");
+        return;
+      }
+      const res = await api.post("/external-feed/save/", events, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       alert(`Created: ${res.data.created}, Updated: ${res.data.updated}`);
-    } catch (err) {
-      alert("Error saving events");
+    } catch (e: any) {
+      const detail = e?.response?.data?.detail ?? e?.response?.data?.error ?? "Error saving events";
+      setError(detail);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -74,8 +95,8 @@ export default function ExternalFeedPage() {
       </Typography>
 
       <Box sx={{ mb: 2 }}>
-        <Button variant="contained" onClick={saveToDb}>
-          Save to Bunker DB
+        <Button variant="contained" onClick={saveToDb} disabled={saving || loading || events.length === 0}>
+          {saving ? "Saving..." : "Save to Bunker DB"}
         </Button>
       </Box>
 

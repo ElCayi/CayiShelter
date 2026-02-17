@@ -1,17 +1,20 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
 import LoginPage from "../pages/LoginPage";
+import LoginTwoFactorPage from "../pages/LoginTwoFactorPage";
 import ForgotPasswordPage from "../pages/ForgotPasswordPage";
 import ForgotPasswordSentPage from "../pages/ForgotPasswordSentPage";
 import StatusPage from "../pages/StatusPage";
 import EventsPage from "../pages/EventsPage";
 import ExternalFeedPage from "../pages/ExternalFeedPage";
+import TwoFactorPage from "../pages/TwoFactorPage";
 import ProtectedRoute from "./ProtectedRoute";
 
 export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/login/2fa" element={<LoginTwoFactorPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/forgot-password/sent" element={<ForgotPasswordSentPage />} />
 
@@ -21,6 +24,7 @@ export function AppRoutes() {
           <Route path="status" element={<StatusPage />} />
           <Route path="events" element={<EventsPage />} />
           <Route path="external" element={<ExternalFeedPage />} />
+          <Route path="security" element={<TwoFactorPage />} />
         </Route>
       </Route>
 

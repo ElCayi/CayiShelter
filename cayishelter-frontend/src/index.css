@@ -1,68 +1,133 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Share+Tech+Mono&display=swap");
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --carbon: #0c0f0e;
+  --panel: #161a18;
+  --phosphor: #42ff8c;
+  --warning: #ffb000;
+  --critical: #ff3030;
+  --steel: #6f7f74;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+* {
+  box-sizing: border-box;
 }
-a:hover {
-  color: #535bf2;
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
 }
 
 body {
   margin: 0;
+  background: var(--carbon);
+  color: var(--phosphor);
+  font-family: "IBM Plex Mono", "Share Tech Mono", monospace;
+  text-transform: uppercase;
+  text-shadow: 0 0 4px rgba(66, 255, 140, 0.2);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.02) 0px,
+    rgba(255, 255, 255, 0.02) 1px,
+    transparent 2px,
+    transparent 4px
+  );
+  opacity: 0.25;
+  z-index: 9999;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(66, 255, 140, 0.08) 1px, transparent 1px);
+  background-size: 4px 4px;
+  opacity: 0.06;
+  z-index: 1;
+}
+
+.terminal-line {
+  border: 1px solid var(--steel);
+  background: var(--panel);
+  padding: 6px 10px;
+  color: var(--phosphor);
+  letter-spacing: 0.08em;
+  font-size: 12px;
+}
+
+.terminal-cursor::after {
+  content: "_";
+  display: inline-block;
+  margin-left: 2px;
+  animation: cursorBlink 1s step-end infinite;
+}
+
+.bios-panel {
+  font-family: "IBM Plex Mono", "Share Tech Mono", monospace;
+}
+
+.bios-sep {
+  margin: 0;
+  color: var(--steel);
+  letter-spacing: 0.02em;
+}
+
+.bios-row {
+  margin: 0;
   display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.05em;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+.bios-pipe {
+  color: var(--steel);
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+.bios-label {
+  color: #f336a6;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+.bios-value {
+  color: var(--phosphor);
+}
+
+.bios-value-ok {
+  color: var(--phosphor);
+}
+
+.bios-value-critical {
+  color: #f336a6;
+}
+
+@keyframes cursorBlink {
+  50% {
+    opacity: 0;
   }
-  a:hover {
-    color: #747bff;
+}
+
+.critical-pulse {
+  animation: criticalPulse 1.3s steps(2, end) infinite;
+}
+
+@keyframes criticalPulse {
+  0% {
+    filter: brightness(1);
   }
-  button {
-    background-color: #f9f9f9;
+  50% {
+    filter: brightness(1.35);
+  }
+  100% {
+    filter: brightness(1);
   }
 }
