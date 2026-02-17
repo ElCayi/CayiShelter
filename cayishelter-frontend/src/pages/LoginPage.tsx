@@ -123,6 +123,7 @@ export default function LoginPage() {
   const choiceInputRef = useRef<HTMLInputElement | null>(null);
   const usernameInputRef = useRef<HTMLInputElement | null>(null);
   const passwordInputRef = useRef<HTMLInputElement | null>(null);
+  const terminalEndRef = useRef<HTMLDivElement | null>(null);
   const [booting, setBooting] = useState(true);
   const [pssiChars, setPssiChars] = useState(0);
   const [introStep, setIntroStep] = useState(0);
@@ -264,6 +265,43 @@ export default function LoginPage() {
     </Box>
   );
 
+  const renderTelemetryLine = (line: string, key?: string) => {
+    const m = line.match(/^(.*?)(\s\.+\s)(.+)$/);
+    if (!m) return renderTokenizedLine(line, key);
+    const left = `${m[1] ?? ""}${m[2] ?? ""}`;
+    const right = m[3] ?? "";
+    const leftHasPs01Prefix = left.startsWith("PS-01 ");
+    return (
+      <Box component="span" key={key ?? line}>
+        {leftHasPs01Prefix ? (
+          <>
+            <Box component="span" className="ps01">
+              PS-01
+            </Box>
+            <Box component="span" className="plain">
+              {left.slice(5)}
+            </Box>
+          </>
+        ) : (
+          tokenizeLine(left).map((token, idx) => (
+            <Box
+              component="span"
+              key={`${key ?? line}-l-${idx}`}
+              className={token.className === "ps01" ? "ps01" : "plain"}
+            >
+              {token.text}
+            </Box>
+          ))
+        )}
+        {tokenizeLine(right).map((token, idx) => (
+          <Box component="span" key={`${key ?? line}-r-${idx}`} className={token.className}>
+            {token.text}
+          </Box>
+        ))}
+      </Box>
+    );
+  };
+
   useEffect(() => {
     if (!booting || !introDone || !bannerDone || !sessionConfigured) return;
     const timer = window.setTimeout(() => {
@@ -393,6 +431,27 @@ export default function LoginPage() {
       setUserCaretPos(username.length);
     }
   }, [booting, secureIntroDone, username.length]);
+
+  useEffect(() => {
+    terminalEndRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+  }, [
+    pssiChars,
+    introStep,
+    asciiCmdChars,
+    asciiStep,
+    gateCmdChars,
+    roleMenuStep,
+    zoneMenuStep,
+    typedChars,
+    statusCmdChars,
+    bootStep,
+    telemetryStep,
+    secureCmdChars,
+    secureLineStep,
+    secureIntroDone,
+    sessionConfigured,
+    booting,
+  ]);
 
   useEffect(() => {
     if (booting || secureIntroDone) return;
@@ -718,7 +777,7 @@ export default function LoginPage() {
           <Box sx={{ mt: 0.5, pl: 1.5 }}>
             {telemetryLines.slice(0, Math.min(telemetryStep, telemetryLines.length)).map((line) => (
               <Typography key={line} variant="caption" sx={{ display: "block", color: "text.primary", mb: 0.5 }}>
-                {renderTokenizedLine(line, `telemetry-${line}`)}
+                {renderTelemetryLine(line, `telemetry-${line}`)}
               </Typography>
             ))}
           </Box>
@@ -882,17 +941,18 @@ export default function LoginPage() {
                         </Box>
                       </Box>
 
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
+                      <Box sx={{ display: "block", pt: 0.6, mt: 2 }}>
                         <Button
                           type="submit"
                           variant="outlined"
                           disabled={loading || !username.trim() || !password.trim()}
-                          sx={{ minWidth: 170 }}
+                          fullWidth
+                          sx={{ mb: 0.8 }}
                         >
                           {loading ? "AUTHENTICATING..." : "EXECUTE LOGIN"}
                         </Button>
 
-                        <Link component={RouterLink} to="/forgot-password" underline="hover" sx={{ fontSize: 12 }}>
+                        <Link component={RouterLink} to="/forgot-password" underline="hover" sx={{ fontSize: 12, display: "block", mt: 0.35 }}>
                           RUN RECOVERY SCRIPT
                         </Link>
                       </Box>
@@ -908,8 +968,26 @@ export default function LoginPage() {
               )}
             </>
           )}
+          <Box sx={{ height: { xs: 42, sm: 56 } }} />
+          <Typography
+            ref={terminalEndRef}
+            variant="caption"
+            sx={{
+              display: "block",
+              mt: 0,
+              mb: 0,
+              color: "text.secondary",
+              opacity: 0.55,
+              fontSize: 10,
+              textTransform: "none",
+              textAlign: "center"
+            }}
+          >
+            Created by Claudia Rodríguez Mayán CAYISHELTER Project 2026
+          </Typography>
         </Box>
       </Paper>
     </Box>
   );
 }
+
