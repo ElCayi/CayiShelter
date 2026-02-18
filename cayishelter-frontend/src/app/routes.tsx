@@ -4,6 +4,7 @@ import LoginPage from "../pages/LoginPage";
 import LoginTwoFactorPage from "../pages/LoginTwoFactorPage";
 import ForgotPasswordPage from "../pages/ForgotPasswordPage";
 import ForgotPasswordSentPage from "../pages/ForgotPasswordSentPage";
+import ResetPasswordPage from "../pages/ResetPasswordPage";
 import StatusPage from "../pages/StatusPage";
 import EventsPage from "../pages/EventsPage";
 import ExternalFeedPage from "../pages/ExternalFeedPage";
@@ -17,6 +18,7 @@ export function AppRoutes() {
       <Route path="/login/2fa" element={<LoginTwoFactorPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/forgot-password/sent" element={<ForgotPasswordSentPage />} />
+      <Route path="/reset-password/:uid/:token" element={<ResetPasswordPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route path="/app" element={<DashboardLayout />}>

@@ -1,5 +1,5 @@
 import { Alert, Box, Button, Link, Paper, TextField, Typography } from "@mui/material";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { api } from "../services/api";
 
@@ -9,6 +9,39 @@ type LoginResponse = {
   access?: string;
   refresh?: string;
 };
+
+const LOGIN_INTRO_SEEN_KEY = "cayishelter_login_intro_seen_v1";
+
+function hasSeenLoginIntro() {
+  try {
+    return sessionStorage.getItem(LOGIN_INTRO_SEEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markLoginIntroSeen() {
+  try {
+    sessionStorage.setItem(LOGIN_INTRO_SEEN_KEY, "1");
+  } catch {
+    // noop
+  }
+}
+
+function clearLoginIntroSeen() {
+  try {
+    sessionStorage.removeItem(LOGIN_INTRO_SEEN_KEY);
+  } catch {
+    // noop
+  }
+}
+
+function isEditableElement(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+  const tag = target.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+}
 
 function isTokenUsable(token: string | null) {
   if (!token) return false;
@@ -137,6 +170,8 @@ export default function LoginPage() {
   const [asciiLogo, setAsciiLogo] = useState("");
   const [asciiCmdChars, setAsciiCmdChars] = useState(0);
   const [asciiStep, setAsciiStep] = useState(0);
+  const [preLoginCmdChars, setPreLoginCmdChars] = useState(0);
+  const [preLoginLineVisible, setPreLoginLineVisible] = useState(false);
   const [gateCmdChars, setGateCmdChars] = useState(0);
   const [selectedRole, setSelectedRole] = useState("operator");
   const [selectedZone, setSelectedZone] = useState("underground");
@@ -195,6 +230,8 @@ export default function LoginPage() {
   ];
   const pssiLine = "PSSI Secure Operations Shell [Build 3.2.17-UG]";
   const asciiCommand = "PS C:\\DRACONIS\\AUTH> type .\\PSSI-banner.txt";
+  const preLoginSessionCommand = "PS C:\\DRACONIS\\AUTH> request-session --preauth";
+  const preLoginSessionLine = "SESSION REQUEST MODE: PRE-AUTH (ROLE WILL BE GRANTED AFTER LOGIN)";
   const gateCommand = "PS C:\\DRACONIS\\AUTH> open-access-gate --interactive";
   const secureChannelCommand = "PS C:\\DRACONIS\\AUTH> open-secure-channel";
   const secureChannelLines = [
@@ -302,6 +339,84 @@ export default function LoginPage() {
     );
   };
 
+  const fastForwardToInputs = useCallback(() => {
+    setPssiChars(pssiLine.length);
+    setIntroStep(introLines.length);
+    setAsciiCmdChars(asciiCommand.length);
+    setAsciiStep(asciiLines.length);
+    setPreLoginCmdChars(preLoginSessionCommand.length);
+    setPreLoginLineVisible(true);
+    setGateCmdChars(gateCommand.length);
+    setRoleMenuStep(roleMenuLines.length);
+    setZoneMenuStep(zoneMenuLines.length);
+    setChoiceStep("zone");
+    setChoiceInput("");
+    setSessionConfigError(null);
+    setSessionConfigured(true);
+    setTypedChars(sessionCommand.length);
+    setStatusCmdChars(statusCommand.length);
+    setBootStep(bootLines.length);
+    setTelemetryStep(telemetryLines.length);
+    setBooting(false);
+    setSecureCmdChars(secureChannelCommand.length);
+    setSecureLineStep(secureChannelLines.length);
+    setSecureIntroDone(true);
+    markLoginIntroSeen();
+  }, [
+    asciiCommand.length,
+    asciiLines.length,
+    bootLines.length,
+    gateCommand.length,
+    introLines.length,
+    pssiLine.length,
+    preLoginSessionCommand.length,
+    roleMenuLines.length,
+    secureChannelCommand.length,
+    secureChannelLines.length,
+    sessionCommand.length,
+    statusCommand.length,
+    telemetryLines.length,
+    zoneMenuLines.length,
+  ]);
+
+  const replayIntro = useCallback(() => {
+    clearLoginIntroSeen();
+    setBooting(true);
+    setPssiChars(0);
+    setIntroStep(0);
+    setTypedChars(0);
+    setStatusCmdChars(0);
+    setBootStep(0);
+    setTelemetryStep(0);
+    setSecureCmdChars(0);
+    setSecureLineStep(0);
+    setSecureIntroDone(false);
+    setAsciiCmdChars(0);
+    setAsciiStep(0);
+    setPreLoginCmdChars(0);
+    setPreLoginLineVisible(false);
+    setGateCmdChars(0);
+    setSelectedRole("operator");
+    setSelectedZone("underground");
+    setChoiceStep("role");
+    setRoleMenuStep(0);
+    setZoneMenuStep(0);
+    setChoiceInput("");
+    setSessionConfigError(null);
+    setSessionConfigured(false);
+    setUsername("");
+    setPassword("");
+    setUserCaretPos(0);
+    setPassCaretPos(0);
+    setError(null);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (!hasSeenLoginIntro()) return;
+    fastForwardToInputs();
+  }, [fastForwardToInputs]);
+
   useEffect(() => {
     if (!booting || !introDone || !bannerDone || !sessionConfigured) return;
     const timer = window.setTimeout(() => {
@@ -352,9 +467,15 @@ export default function LoginPage() {
       .then((res) => (res.ok ? res.text() : ""))
       .then((text) => {
         if (active) {
+          const loadedAsciiLines = text.replace(/\s+$/, "").split(/\r?\n/);
           setAsciiLogo(text);
-          setAsciiCmdChars(0);
-          setAsciiStep(0);
+          if (hasSeenLoginIntro()) {
+            setAsciiCmdChars((prev) => prev);
+            setAsciiStep(loadedAsciiLines.length);
+          } else {
+            setAsciiCmdChars(0);
+            setAsciiStep(0);
+          }
         }
       })
       .catch(() => {
@@ -382,12 +503,28 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!introDone || !bannerDone || sessionConfigured) return;
+    if (preLoginCmdChars < preLoginSessionCommand.length) {
+      const timer = window.setTimeout(() => {
+        setPreLoginCmdChars((prev) => prev + 1);
+      }, 14);
+      return () => window.clearTimeout(timer);
+    }
+    if (preLoginLineVisible) return;
+    const timer = window.setTimeout(() => {
+      setPreLoginLineVisible(true);
+    }, 90);
+    return () => window.clearTimeout(timer);
+  }, [introDone, bannerDone, sessionConfigured, preLoginCmdChars, preLoginSessionCommand.length, preLoginLineVisible]);
+
+  useEffect(() => {
+    if (!introDone || !bannerDone || sessionConfigured) return;
+    if (!preLoginLineVisible) return;
     if (gateCmdChars >= gateCommand.length) return;
     const timer = window.setTimeout(() => {
       setGateCmdChars((prev) => prev + 1);
     }, 14);
     return () => window.clearTimeout(timer);
-  }, [introDone, bannerDone, sessionConfigured, gateCmdChars, gateCommand.length]);
+  }, [introDone, bannerDone, sessionConfigured, preLoginLineVisible, gateCmdChars, gateCommand.length]);
 
   useEffect(() => {
     if (gateCmdChars < gateCommand.length || sessionConfigured) return;
@@ -439,6 +576,8 @@ export default function LoginPage() {
     introStep,
     asciiCmdChars,
     asciiStep,
+    preLoginCmdChars,
+    preLoginLineVisible,
     gateCmdChars,
     roleMenuStep,
     zoneMenuStep,
@@ -466,6 +605,31 @@ export default function LoginPage() {
     const doneTimer = window.setTimeout(() => setSecureIntroDone(true), 700);
     return () => window.clearTimeout(doneTimer);
   }, [booting, secureIntroDone, secureCmdChars, secureChannelCommand.length, secureLineStep, secureChannelLines.length]);
+
+  useEffect(() => {
+    if (!secureIntroDone) return;
+    markLoginIntroSeen();
+  }, [secureIntroDone]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (isEditableElement(event.target)) return;
+
+      if (event.key === "Enter") {
+        if (!booting && sessionConfigured && secureIntroDone) return;
+        event.preventDefault();
+        fastForwardToInputs();
+        return;
+      }
+
+      if (event.key.toLowerCase() === "r") {
+        event.preventDefault();
+        replayIntro();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [booting, fastForwardToInputs, replayIntro, secureIntroDone, sessionConfigured]);
 
   const handleLogin = async () => {
     try {
@@ -559,7 +723,7 @@ export default function LoginPage() {
                   color: "text.secondary",
                   fontFamily: '"IBM Plex Mono", "Share Tech Mono", monospace',
                   fontSize: 5,
-                  lineHeight: 1,
+                  lineHeight: 1.4,
                   letterSpacing: 1,
                   textTransform: "none",
                   whiteSpace: "pre",
@@ -607,6 +771,18 @@ export default function LoginPage() {
               }}
               sx={{ mb: 2 }}
             >
+              <Typography
+                variant="caption"
+                sx={{ display: "block", mb: 0.45 }}
+                className={preLoginCmdChars < preLoginSessionCommand.length ? "terminal-cursor" : undefined}
+              >
+                {renderTokenizedLine(preLoginSessionCommand.slice(0, preLoginCmdChars), "pre-login-session-cmd")}
+              </Typography>
+              {preLoginLineVisible && (
+                <Typography variant="caption" sx={{ display: "block", mb: 0.75, opacity: 0.8 }}>
+                  {renderTokenizedLine(preLoginSessionLine, "pre-login-session-state", "meta")}
+                </Typography>
+              )}
               <Typography
                 variant="caption"
                 sx={{ display: "block", mb: 0.5 }}
@@ -968,7 +1144,7 @@ export default function LoginPage() {
               )}
             </>
           )}
-          <Box sx={{ height: { xs: 42, sm: 56 } }} />
+          <Box sx={{ height: { xs: 12, sm: 18 } }} />
           <Typography
             ref={terminalEndRef}
             variant="caption"
@@ -983,11 +1159,12 @@ export default function LoginPage() {
               textAlign: "center"
             }}
           >
-            Created by Claudia Rodríguez Mayán CAYISHELTER Project 2026
+            Created by Cayi * CAYISHELTER Project 2026
           </Typography>
         </Box>
       </Paper>
     </Box>
   );
 }
+
 

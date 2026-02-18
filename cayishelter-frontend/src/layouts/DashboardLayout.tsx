@@ -1,6 +1,7 @@
-import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Box,
+  Button,
   Drawer,
   List,
   ListItemButton,
@@ -53,6 +54,14 @@ const navGroups = [
 
 export default function DashboardLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    sessionStorage.removeItem("twoFactorChallenge");
+    navigate("/login", { replace: true });
+  };
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
@@ -89,51 +98,59 @@ export default function DashboardLayout() {
         }}
       >
         <Toolbar />
-        <List sx={{ pt: 0 }}>
-          {navGroups.map((group) => (
-            <Box key={group.title} sx={{ mb: 1 }}>
-              <Typography
-                variant="caption"
-                sx={{ px: 2, py: 1, color: "text.secondary", display: "block", borderTop: "1px solid", borderColor: "divider" }}
-              >
-                - {group.title} -
-              </Typography>
+        <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+          <List sx={{ pt: 0, flexGrow: 1 }}>
+            {navGroups.map((group) => (
+              <Box key={group.title} sx={{ mb: 1 }}>
+                <Typography
+                  variant="caption"
+                  sx={{ px: 2, py: 1, color: "text.secondary", display: "block", borderTop: "1px solid", borderColor: "divider" }}
+                >
+                  - {group.title} -
+                </Typography>
 
-              {group.items.map((it) => {
-                const selected = it.to ? location.pathname === it.to : false;
-                const isOffline = Boolean(it.offline);
+                {group.items.map((it) => {
+                  const selected = it.to ? location.pathname === it.to : false;
+                  const isOffline = Boolean(it.offline);
 
-                return (
-                  <ListItemButton
-                    key={`${group.title}-${it.code}`}
-                    component={it.to ? Link : "button"}
-                    to={it.to ?? undefined}
-                    selected={selected}
-                    disabled={isOffline}
-                    sx={{
-                      borderTop: "1px solid",
-                      borderColor: "divider",
-                      alignItems: "center",
-                      gap: 1,
-                      py: 1.25,
-                    }}
-                  >
-                    <PixelGlyph glyph={it.glyph} />
-                    <ListItemText
-                      primary={it.label}
-                      secondary={it.code}
-                      slotProps={{
-                        primary: { sx: { fontSize: 13, letterSpacing: "0.06em" } },
-                        secondary: { sx: { fontSize: 10, color: "text.secondary" } },
+                  return (
+                    <ListItemButton
+                      key={`${group.title}-${it.code}`}
+                      component={it.to ? Link : "button"}
+                      to={it.to ?? undefined}
+                      selected={selected}
+                      disabled={isOffline}
+                      sx={{
+                        borderTop: "1px solid",
+                        borderColor: "divider",
+                        alignItems: "center",
+                        gap: 1,
+                        py: 1.25,
                       }}
-                    />
-                    {isOffline && <Chip label="OFFLINE" size="small" color="warning" />}
-                  </ListItemButton>
-                );
-              })}
-            </Box>
-          ))}
-        </List>
+                    >
+                      <PixelGlyph glyph={it.glyph} />
+                      <ListItemText
+                        primary={it.label}
+                        secondary={it.code}
+                        slotProps={{
+                          primary: { sx: { fontSize: 13, letterSpacing: "0.06em" } },
+                          secondary: { sx: { fontSize: 10, color: "text.secondary" } },
+                        }}
+                      />
+                      {isOffline && <Chip label="OFFLINE" size="small" color="warning" />}
+                    </ListItemButton>
+                  );
+                })}
+              </Box>
+            ))}
+          </List>
+
+          <Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider" }}>
+            <Button variant="outlined" color="inherit" onClick={handleLogout} fullWidth>
+              CERRAR SESIÓN
+            </Button>
+          </Box>
+        </Box>
       </Drawer>
 
       <Box component="main" sx={{ flexGrow: 1, p: 3, backgroundColor: "background.default" }}>
